@@ -1,41 +1,50 @@
-import {
-	BlinnPhongMaterial,
-	Camera,
-	MeshRenderer,
-	PrimitiveMesh,
-	Vector3,
-	WebGLEngine,
-} from "oasis-engine";
+import { AssetType, Camera, Color, ParticleRenderer, TrailRenderer, Texture2D, Vector3, WebGLEngine } from "oasis-engine";
 
-export function createOasis() {
-	const engine = new WebGLEngine("canvas");
-	engine.canvas.resizeByClientSize();
-	const scene = engine.sceneManager.activeScene;
-	const rootEntity = scene.createRootEntity();
+export function runTrailEffect() {
 
-	// init camera
-	const cameraEntity = rootEntity.createChild("camera");
-	cameraEntity.addComponent(Camera);
-	const pos = cameraEntity.transform.position;
-	pos.setValue(10, 10, 10);
-	cameraEntity.transform.position = pos;
-	cameraEntity.transform.lookAt(new Vector3(0, 0, 0));
+//-- create engine object
+const engine = new WebGLEngine("canvas");
+engine.canvas.resizeByClientSize();
 
-	// init light
-	scene.ambientLight.diffuseSolidColor.setValue(1, 1, 1, 1);
-	scene.ambientLight.diffuseIntensity = 1.2;
+const scene = engine.sceneManager.activeScene;
+const rootEntity = scene.createRootEntity();
 
-	// init cube
-	const cubeEntity = rootEntity.createChild("cube");
-	const renderer = cubeEntity.addComponent(MeshRenderer);
-	const mtl = new BlinnPhongMaterial(engine);
-	const color = mtl.baseColor;
-	color.r = 0.0;
-	color.g = 0.8;
-	color.b = 0.5;
-	color.a = 1.0;
-	renderer.mesh = PrimitiveMesh.createCuboid(engine);
-	renderer.setMaterial(mtl);
+//-- create camera
+const cameraEntity = rootEntity.createChild("camera_entity");
+cameraEntity.transform.position = new Vector3(0, 0, 50);
+cameraEntity.addComponent(Camera);
 
-	engine.run();
+engine.run();
+
+let trail: TrailRenderer = rootEntity.createChild("trail").addComponent(TrailRenderer);
+console.log(trail);
+
+let particles: ParticleRenderer = rootEntity.createChild("particle").addComponent(ParticleRenderer);
+
+engine.resourceManager
+  .load<Texture2D>({
+    url: "https://gw.alipayobjects.com/mdn/rms_d27172/afts/img/A*kxloQYq2YDEAAAAAAAAAAAAAARQnAQ",
+    type: AssetType.Texture2D
+  })
+  .then((resource) => {
+    particles.maxCount = 100;
+    particles.startTimeRandomness = 10;
+    particles.lifetime = 4;
+    particles.position = new Vector3(0, 20, 0);
+    particles.positionRandomness = new Vector3(100, 0, 0);
+    particles.velocity = new Vector3(0, -3, 0);
+    particles.velocityRandomness = new Vector3(1, 2, 0);
+    particles.accelerationRandomness = new Vector3(0, 1, 0);
+    particles.velocityRandomness = new Vector3(-1, -1, -1);
+    particles.rotateVelocity = 1;
+    particles.rotateVelocityRandomness = 1;
+    particles.size = 1;
+    particles.sizeRandomness = 0.8;
+    particles.color = new Color(0.5, 0.5, 0.5);
+    particles.colorRandomness = 1;
+    particles.isFadeIn = true;
+    particles.isFadeOut = true;
+    particles.texture = resource;
+    particles.start();
+  });
 }

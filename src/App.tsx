@@ -1,9 +1,9 @@
 import React from "react";
-import { createOasis } from "./oasis";
+import { runTrailEffect } from "./oasis";
 
 function App() {
 	React.useEffect(() => {
-		createOasis();
+		runTrailEffect();
 	}, []);
 
 	return (
