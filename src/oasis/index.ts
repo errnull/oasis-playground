@@ -1,50 +1,59 @@
-import { AssetType, Camera, Color, ParticleRenderer, TrailRenderer, Texture2D, Vector3, WebGLEngine } from "oasis-engine";
+import { BlinnPhongMaterial, Camera, Color, DirectLight, MeshRenderer, PrimitiveMesh, Script, Vector3, WebGLEngine, TrailRenderer } from "oasis-engine";
 
-export function runTrailEffect() {
+class Moving extends Script {
+	private _total = 0;
+	pause = false;
 
-//-- create engine object
-const engine = new WebGLEngine("canvas");
-engine.canvas.resizeByClientSize();
+	entity: any;
+	private _totalTime: number = 0;
 
-const scene = engine.sceneManager.activeScene;
-const rootEntity = scene.createRootEntity();
+	onUpdate(deltaTime: number) {
+		if (!this.pause) {
+			this._total += deltaTime / 10;
+			this.entity.transform.setRotation(
+				this._total,
+				this._total / 4,
+				-this._total / 2
+			);
 
-//-- create camera
-const cameraEntity = rootEntity.createChild("camera_entity");
-cameraEntity.transform.position = new Vector3(0, 0, 50);
-cameraEntity.addComponent(Camera);
+			this._totalTime += deltaTime;
+			const sinFactor = Math.sin(this._totalTime / 500);
+			const positionFactor = Math.max(sinFactor, 0) * 3;
+			this.entity.transform.setPosition(0, positionFactor, 0);
+		}
+	}
+}
 
-engine.run();
+export function createOasis() {
 
-let trail: TrailRenderer = rootEntity.createChild("trail").addComponent(TrailRenderer);
-console.log(trail);
+	const engine = new WebGLEngine("canvas");
+	engine.canvas.resizeByClientSize();
 
-let particles: ParticleRenderer = rootEntity.createChild("particle").addComponent(ParticleRenderer);
+	const scene = engine.sceneManager.activeScene;
+	const rootEntity = scene.createRootEntity("root");
 
-engine.resourceManager
-  .load<Texture2D>({
-    url: "https://gw.alipayobjects.com/mdn/rms_d27172/afts/img/A*kxloQYq2YDEAAAAAAAAAAAAAARQnAQ",
-    type: AssetType.Texture2D
-  })
-  .then((resource) => {
-    particles.maxCount = 100;
-    particles.startTimeRandomness = 10;
-    particles.lifetime = 4;
-    particles.position = new Vector3(0, 20, 0);
-    particles.positionRandomness = new Vector3(100, 0, 0);
-    particles.velocity = new Vector3(0, -3, 0);
-    particles.velocityRandomness = new Vector3(1, 2, 0);
-    particles.accelerationRandomness = new Vector3(0, 1, 0);
-    particles.velocityRandomness = new Vector3(-1, -1, -1);
-    particles.rotateVelocity = 1;
-    particles.rotateVelocityRandomness = 1;
-    particles.size = 1;
-    particles.sizeRandomness = 0.8;
-    particles.color = new Color(0.5, 0.5, 0.5);
-    particles.colorRandomness = 1;
-    particles.isFadeIn = true;
-    particles.isFadeOut = true;
-    particles.texture = resource;
-    particles.start();
-  });
+	let cameraEntity = rootEntity.createChild("camera_entity");
+	cameraEntity.transform.position = new Vector3(0, 5, 10);
+	cameraEntity.transform.lookAt(new Vector3(0, 0, 0));
+	cameraEntity.addComponent(Camera);
+	// scene.background.solidColor.setValue(0, 0, 0, 1);
+
+	let lightEntity = rootEntity.createChild("light");
+
+	let directLight = lightEntity.addComponent(DirectLight);
+	directLight.color = new Color(1.0, 1.0, 1.0);
+	directLight.intensity = 0.5;
+
+	lightEntity.transform.rotation = new Vector3(45, 45, 45);
+
+	let cubeEntity = rootEntity.createChild("cube");
+	let cube = cubeEntity.addComponent(MeshRenderer);
+	cube.mesh = PrimitiveMesh.createCuboid(engine, 0.6, 0.6, 0.6);
+	cube.setMaterial(new BlinnPhongMaterial(engine));
+
+	cubeEntity.addComponent(Moving);
+	// cubeEntity.addComponent(TrailRenderer);
+
+	engine.run();
+
 }
